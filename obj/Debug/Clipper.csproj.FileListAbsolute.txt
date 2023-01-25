@@ -1,0 +1,11 @@
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\Clipper.csproj.AssemblyReference.cache
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\Clipper.csproj.SuggestedBindingRedirects.cache
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\Clipper.csproj.CoreCompileInputs.cache
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\Clipper.csproj.GenerateResource.cache
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\HvN9xC1PAr.Properties.Resources.resources
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\bin\Debug\HvN9xC1PAr.exe.config
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\bin\Debug\HvN9xC1PAr.exe
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\bin\Debug\HvN9xC1PAr.pdb
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\HvN9xC1PAr.exe
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\HvN9xC1PAr.pdb
+C:\Users\User\Desktop\Projects\C#\Clipper\Clipper\obj\Debug\Clipper.csproj.Fody.CopyLocal.cache
